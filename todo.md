@@ -2,12 +2,12 @@
 # small stuff
 * [✓] logging
 * [✓] expand ~
+* [✓] state -> separate file
 * [ ] don't leave any rendered content when exiting
 * [ ] use $VISUAL/$EDITOR
 * [ ] README.md
 * [ ] cli
 * [ ] scrolling
-* [ ] state -> separate file
 
 # design decisions
 * [ ] more general as a file browser or only as notes/diary

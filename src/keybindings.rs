@@ -3,7 +3,7 @@ use std::vec;
 use crossterm::{event::{KeyCode, KeyEvent, KeyModifiers}, terminal::{disable_raw_mode, enable_raw_mode}, execute};
 use tui::widgets::Clear;
 
-use crate::{ui, State, CrossTerminal};
+use crate::{ui, CrossTerminal, state::State};
 
 #[derive(PartialEq, Eq, Clone, Copy)]
 struct KeyBindingPart {
