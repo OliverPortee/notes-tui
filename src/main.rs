@@ -101,6 +101,8 @@ impl State {
 }
 
 fn main() -> io::Result<()> {
+    init_logging()?;
+
     let folder = std::env::args().nth(1).expect("no folder given");
     let folder_path = std::path::PathBuf::from(folder);
     if !folder_path.is_dir() {
@@ -127,6 +129,23 @@ fn main() -> io::Result<()> {
     execute!(terminal.backend_mut(), LeaveAlternateScreen,)?;
     terminal.show_cursor()?;
 
+    Ok(())
+}
+
+fn init_logging() -> std::io::Result<()> {
+    if let Ok(log_file) = std::env::var("LOG_FILE") {
+        let path = PathBuf::from(log_file.clone());
+        if path.exists() {
+            assert!(path.is_file(), "log file is not a file");
+            std::fs::remove_file(path)?;
+        }
+        let config = simple_log::LogConfigBuilder::builder()
+            .path(log_file)
+            .time_format("")
+            .output_file()
+            .build();
+        simple_log::new(config).expect("couldn't set up log file");
+    }
     Ok(())
 }
 
