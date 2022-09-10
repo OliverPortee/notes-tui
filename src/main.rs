@@ -5,6 +5,7 @@ use crossterm::{
         disable_raw_mode, enable_raw_mode, ClearType, EnterAlternateScreen, LeaveAlternateScreen,
     },
 };
+use home_dir::HomeDirExt;
 use std::{
     io::{self, Stdout},
     path::PathBuf,
@@ -119,7 +120,9 @@ fn main() -> io::Result<()> {
     init_logging()?;
 
     let folder = std::env::args().nth(1).expect("no folder given");
-    let folder_path = std::path::PathBuf::from(folder);
+    let folder_path = std::path::PathBuf::from(folder)
+        .expand_home()
+        .expect("could not find out HOME directory");
     if !folder_path.is_dir() {
         panic!(
             "path {} is not a directory",

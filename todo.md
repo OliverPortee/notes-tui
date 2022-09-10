@@ -1,7 +1,7 @@
 
 # small stuff
 * [✓] logging
-* [ ] expand ~
+* [✓] expand ~
 * [ ] don't leave any rendered content when exiting
 * [ ] use $VISUAL/$EDITOR
 * [ ] README.md
@@ -18,6 +18,8 @@
 * [✓] multiple key keybings (gg)
 * [✓] keybinding combinations (C-s)
 * [ ] keybinding configuration via toml
+
+## folders
 
 ## search
 
