@@ -3,11 +3,12 @@
 * [✓] logging
 * [✓] expand ~
 * [✓] state -> separate file
+* [✓] use $VISUAL/$EDITOR
 * [ ] don't leave any rendered content when exiting
-* [ ] use $VISUAL/$EDITOR
 * [ ] README.md
 * [ ] cli
 * [ ] scrolling
+* [ ] create folder if not existing
 
 # design decisions
 * [ ] more general as a file browser or only as notes/diary

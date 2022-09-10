@@ -1,4 +1,5 @@
-use std::io::Result;
+use std::ffi::OsString;
+use std::{io::Result};
 
 use std::path::PathBuf;
 
@@ -13,10 +14,11 @@ pub struct State {
     pub list_state: ListState,
     pub file_view_content: String,
     pub key_state_machine: KeyStateMachine,
+    pub editor: OsString,
 }
 
 impl State {
-    pub fn new(cwd: PathBuf) -> Self {
+    pub fn new(cwd: PathBuf, editor: OsString) -> Self {
         assert!(cwd.is_dir());
         State {
             cwd,
@@ -24,6 +26,7 @@ impl State {
             list_state: ListState::default(),
             file_view_content: String::new(),
             key_state_machine: make_key_sm(),
+            editor,
         }
     }
 

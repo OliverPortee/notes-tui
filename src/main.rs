@@ -24,18 +24,25 @@ mod state;
 
 type CrossTerminal = Terminal<CrosstermBackend<Stdout>>;
 
+fn fail<T, S: AsRef<str>>(msg: S) -> T {
+    eprintln!("{}", msg.as_ref());
+    std::process::exit(1);
+}
+
 fn main() -> io::Result<()> {
     init_logging()?;
 
-    let folder = std::env::args().nth(1).expect("no folder given");
+    let folder = std::env::args()
+        .nth(1)
+        .unwrap_or_else(|| fail("no folder given"));
     let folder_path = std::path::PathBuf::from(folder)
         .expand_home()
-        .expect("could not find out HOME directory");
+        .unwrap_or_else(|_| fail("could not find out HOME directory"));
     if !folder_path.is_dir() {
-        panic!(
+        fail::<(), String>(format!(
             "path {} is not a directory",
-            folder_path.into_os_string().into_string().unwrap()
-        );
+            folder_path.clone().into_os_string().into_string().unwrap()
+        ));
     }
 
     // setup terminal
@@ -44,7 +51,11 @@ fn main() -> io::Result<()> {
     let backend = CrosstermBackend::new(std::io::stdout());
     let terminal = Terminal::new(backend)?;
 
-    let mut state = State::new(folder_path);
+    let editor = std::env::var_os("VISUAL")
+        .or_else(|| std::env::var_os("EDITOR"))
+        .unwrap_or_else(|| fail("could not find $VISUAL or $EDITOR"));
+
+    let mut state = State::new(folder_path, editor);
     state.update_files()?;
 
     run(state, terminal)?;
@@ -64,7 +75,9 @@ fn init_logging() -> std::io::Result<()> {
     if let Ok(log_file) = std::env::var("LOG_FILE") {
         let path = PathBuf::from(log_file.clone());
         if path.exists() {
-            assert!(path.is_file(), "log file is not a file");
+            if !path.is_file() {
+                fail::<(), &str>("log file is not a file");
+            }
             std::fs::remove_file(path)?;
         }
         let config = simple_log::LogConfigBuilder::builder()
@@ -72,7 +85,7 @@ fn init_logging() -> std::io::Result<()> {
             .time_format("")
             .output_file()
             .build();
-        simple_log::new(config).expect("couldn't set up log file");
+        simple_log::new(config).unwrap_or_else(|_| fail("couldn't set up log file"));
     }
     Ok(())
 }

@@ -173,7 +173,7 @@ pub fn make_key_sm() -> KeyStateMachine {
                 if let Some(path) = state.selected_file() {
                     disable_raw_mode()?;
                     terminal.draw(|f| f.render_widget(Clear, f.size()))?;
-                    std::process::Command::new("nvim")
+                    std::process::Command::new(&state.editor)
                         .arg(path.as_os_str())
                         .status()?;
                     state.update_file_view_content()?;
