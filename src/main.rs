@@ -6,22 +6,29 @@ use crossterm::{
     },
 };
 use std::{
-    io,
-    path::{Path, PathBuf},
+    io::{self, Stdout},
+    path::PathBuf,
 };
 use tui::{
     backend::{Backend, CrosstermBackend},
     layout::{Constraint, Direction, Layout},
     style::{Color, Modifier, Style},
-    widgets::{Block, Borders, Clear, List, ListItem, ListState, Paragraph},
+    widgets::{Block, Borders, List, ListItem, ListState, Paragraph},
     Frame, Terminal,
 };
 
-struct State {
+mod keybindings;
+
+use keybindings::{make_key_sm, KeyStateMachine};
+
+type CrossTerminal = Terminal<CrosstermBackend<Stdout>>;
+
+pub struct State {
     cwd: PathBuf,
     files: Vec<PathBuf>,
     list_state: ListState,
     file_view_content: String,
+    key_state_machine: KeyStateMachine,
 }
 
 impl State {
@@ -32,6 +39,7 @@ impl State {
             files: Vec::new(),
             list_state: ListState::default(),
             file_view_content: String::new(),
+            key_state_machine: make_key_sm(),
         }
     }
 
@@ -53,10 +61,10 @@ impl State {
         Ok(())
     }
 
-    fn selected_file(&self) -> Option<&Path> {
+    fn selected_file(&self) -> Option<PathBuf> {
         self.list_state.selected().map(|index| {
             assert!(index < self.files.len());
-            self.files[index].as_path()
+            self.files[index].clone()
         })
     }
 
@@ -79,7 +87,7 @@ impl State {
 
     fn selection_down(&mut self) -> io::Result<()> {
         if self.files.is_empty() {
-            return self.update_selection(None);
+            return Ok(());
         }
         match self.list_state.selected() {
             None => self.update_selection(Some(0)),
@@ -90,13 +98,20 @@ impl State {
 
     fn selection_up(&mut self) -> io::Result<()> {
         if self.files.is_empty() {
-            return self.update_selection(None);
+            return Ok(());
         }
         match self.list_state.selected() {
             None => self.update_selection(Some(self.files.len() - 1)),
             Some(0) => Ok(()),
             Some(i) => self.update_selection(Some(i - 1)),
         }
+    }
+
+    fn selection_top(&mut self) -> io::Result<()> {
+        if self.files.is_empty() {
+            return Ok(());
+        }
+        self.update_selection(Some(0))
     }
 }
 
@@ -111,23 +126,25 @@ fn main() -> io::Result<()> {
             folder_path.into_os_string().into_string().unwrap()
         );
     }
-    let mut state = State::new(folder_path);
-    state.update_files()?;
 
     // setup terminal
     enable_raw_mode()?;
-    let mut stdout = io::stdout();
-    execute!(stdout, EnterAlternateScreen)?;
-    let backend = CrosstermBackend::new(stdout);
-    let mut terminal = Terminal::new(backend)?;
+    execute!(std::io::stdout(), EnterAlternateScreen)?;
+    let backend = CrosstermBackend::new(std::io::stdout());
+    let terminal = Terminal::new(backend)?;
 
-    run(&mut terminal, state)?;
+    let mut state = State::new(folder_path);
+    state.update_files()?;
 
-    execute!(io::stdout(), crossterm::terminal::Clear(ClearType::All))?;
+    run(state, terminal)?;
+
+    execute!(
+        std::io::stdout(),
+        crossterm::terminal::Clear(ClearType::All)
+    )?;
     // restore terminal
     disable_raw_mode()?;
-    execute!(terminal.backend_mut(), LeaveAlternateScreen,)?;
-    terminal.show_cursor()?;
+    execute!(std::io::stdout(), LeaveAlternateScreen)?;
 
     Ok(())
 }
@@ -149,35 +166,27 @@ fn init_logging() -> std::io::Result<()> {
     Ok(())
 }
 
-fn run<B: Backend>(terminal: &mut Terminal<B>, mut state: State) -> io::Result<()> {
-    terminal.draw(|f| ui(f, &mut state))?;
+fn run(mut state: State, mut terminal: CrossTerminal) -> io::Result<()> {
+    let state = &mut state;
+    let terminal = &mut terminal;
+    terminal.draw(|f| ui(f, state))?;
     loop {
         if let Event::Key(key) = event::read()? {
             match key.code {
-                KeyCode::Char('q') | KeyCode::Esc => return Ok(()),
-                KeyCode::Char('j') => {
-                    state.selection_down()?;
+                KeyCode::Char('q') => return Ok(()),
+                KeyCode::Esc => {
+                    state.key_state_machine.reset();
                 }
-                KeyCode::Char('k') => {
-                    state.selection_up()?;
-                }
-                KeyCode::Char('l') => {
-                    if let Some(path) = state.selected_file() {
-                        disable_raw_mode()?;
-                        terminal.draw(|f| f.render_widget(Clear, f.size()))?;
-                        std::process::Command::new("nvim")
-                            .arg(path.as_os_str())
-                            .status()?;
-                        state.update_file_view_content()?;
-                        enable_raw_mode()?;
-                        execute!(io::stdout(), crossterm::terminal::Clear(ClearType::All))?;
-                        terminal.draw(|f| ui(f, &mut state))?;
+                _ => {
+                    let result = state.key_state_machine.register_event(key);
+                    if let Some(kb) = result {
+                        let count = state.key_state_machine.count();
+                        (kb.action)(state, terminal, count)?;
                     }
                 }
-                _ => {}
             }
         }
-        terminal.draw(|f| ui(f, &mut state))?;
+        terminal.draw(|f| ui(f, state))?;
     }
 }
 
