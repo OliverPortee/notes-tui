@@ -4,11 +4,12 @@
 * [✓] expand ~
 * [✓] state -> separate file
 * [✓] use $VISUAL/$EDITOR
-* [ ] don't leave any rendered content when exiting
+* [✓] don't leave any rendered content when exiting
 * [ ] README.md
 * [ ] cli
 * [ ] scrolling
 * [ ] create folder if not existing
+* [ ] immutable state in ui() (only after scrolling)
 
 # design decisions
 * [ ] more general as a file browser or only as notes/diary

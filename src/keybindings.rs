@@ -1,9 +1,9 @@
 use std::vec;
 
-use crossterm::{event::{KeyCode, KeyEvent, KeyModifiers}, terminal::{disable_raw_mode, enable_raw_mode}, execute};
+use crossterm::{event::{KeyCode, KeyEvent, KeyModifiers}, execute};
 use tui::widgets::Clear;
 
-use crate::{ui, CrossTerminal, state::State};
+use crate::{CrossTerminal, state::State};
 
 #[derive(PartialEq, Eq, Clone, Copy)]
 struct KeyBindingPart {
@@ -171,15 +171,13 @@ pub fn make_key_sm() -> KeyStateMachine {
             false,
             |state, terminal, _| {
                 if let Some(path) = state.selected_file() {
-                    disable_raw_mode()?;
                     terminal.draw(|f| f.render_widget(Clear, f.size()))?;
+                    execute!(std::io::stdout(), crossterm::terminal::LeaveAlternateScreen)?;
                     std::process::Command::new(&state.editor)
                         .arg(path.as_os_str())
                         .status()?;
                     state.update_file_view_content()?;
-                    enable_raw_mode()?;
-                    execute!(std::io::stdout(), crossterm::terminal::Clear(crossterm::terminal::ClearType::All))?;
-                    terminal.draw(|f| ui(f, state))?;
+                    execute!(std::io::stdout(), crossterm::terminal::EnterAlternateScreen)?;
                 }
                 Ok(())
             },
