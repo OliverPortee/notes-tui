@@ -1,9 +1,7 @@
 use crossterm::{
     event::{self, Event, KeyCode},
     execute,
-    terminal::{
-        disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen,
-    },
+    terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
 };
 use home_dir::HomeDirExt;
 use state::State;
@@ -15,7 +13,7 @@ use tui::{
     backend::{Backend, CrosstermBackend},
     layout::{Constraint, Direction, Layout},
     style::{Color, Modifier, Style},
-    widgets::{Block, List, ListItem, Paragraph},
+    widgets::{Block, Borders, List, ListItem, Paragraph},
     Frame, Terminal,
 };
 
@@ -110,17 +108,25 @@ fn run(mut state: State, mut terminal: CrossTerminal) -> io::Result<()> {
 }
 
 fn ui<B: Backend>(f: &mut Frame<B>, state: &mut State) {
-    let chunks = Layout::default()
-        .direction(Direction::Horizontal)
-        .constraints(
-            [
-                Constraint::Percentage(40),
-                Constraint::Length(1),
-                Constraint::Percentage(60),
-            ]
-            .as_ref(),
-        )
+    let v_chunks = Layout::default()
+        .direction(Direction::Vertical)
+        .constraints(vec![
+            Constraint::Length(2),
+            Constraint::Min(5),
+            Constraint::Length(2),
+        ])
         .split(f.size());
+    let paragraph = Paragraph::new(state.cwd.as_os_str().to_string_lossy())
+        .block(Block::default().borders(Borders::BOTTOM));
+    f.render_widget(paragraph, v_chunks[0]);
+    let h_chunks = Layout::default()
+        .direction(Direction::Horizontal)
+        .constraints(vec![
+            Constraint::Percentage(40),
+            Constraint::Length(1),
+            Constraint::Percentage(60),
+        ])
+        .split(v_chunks[1]);
     let file_list_block = Block::default();
     let list_items: Vec<ListItem> = state.file_names().into_iter().map(ListItem::new).collect();
     let list = List::new(list_items)
@@ -132,9 +138,9 @@ fn ui<B: Backend>(f: &mut Frame<B>, state: &mut State) {
                 .add_modifier(Modifier::BOLD),
         );
     // TODO: clone?!
-    f.render_stateful_widget(list, chunks[0], &mut state.list_state.clone());
+    f.render_stateful_widget(list, h_chunks[0], &mut state.list_state.clone());
 
     let file_view_block = Block::default();
     let file_view_text = Paragraph::new(state.file_view_content.as_str()).block(file_view_block);
-    f.render_widget(file_view_text, chunks[2]);
+    f.render_widget(file_view_text, h_chunks[2]);
 }

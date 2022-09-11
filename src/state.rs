@@ -9,7 +9,7 @@ use crate::keybindings::{KeyStateMachine, make_key_sm};
 
 
 pub struct State {
-    cwd: PathBuf,
+    pub cwd: PathBuf,
     files: Vec<PathBuf>,
     pub list_state: ListState,
     pub file_view_content: String,

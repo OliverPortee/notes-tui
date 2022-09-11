@@ -5,8 +5,11 @@
 * [✓] state -> separate file
 * [✓] use $VISUAL/$EDITOR
 * [✓] don't leave any rendered content when exiting
+* [✓] header with folder name
+* [ ] footer for commands/debug text
+* [ ] new files
 * [ ] README.md
-* [ ] cli
+* [ ] help text
 * [ ] scrolling
 * [ ] create folder if not existing
 * [ ] immutable state in ui() (only after scrolling)
