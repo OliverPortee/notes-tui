@@ -1,9 +1,6 @@
+use crate::{state::State, CrossTerminal};
+use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 use std::vec;
-
-use crossterm::{event::{KeyCode, KeyEvent, KeyModifiers}, execute};
-use tui::widgets::Clear;
-
-use crate::{CrossTerminal, state::State};
 
 #[derive(PartialEq, Eq, Clone, Copy)]
 struct KeyBindingPart {
@@ -15,7 +12,8 @@ struct KeyBindingPart {
 pub struct KeyBinding {
     keys: Vec<KeyBindingPart>,
     repeatable: bool,
-    pub action: fn(state: &mut State, terminal: &mut CrossTerminal, count: usize) -> std::io::Result<()>,
+    pub action:
+        fn(state: &mut State, terminal: &mut CrossTerminal, count: usize) -> std::io::Result<()>,
 }
 
 pub struct KeyStateMachine {
@@ -40,7 +38,11 @@ impl KeyBinding {
     fn new_multi(
         keys: Vec<KeyBindingPart>,
         repeatable: bool,
-        action: fn(state: &mut State, terminal: &mut CrossTerminal, count: usize) -> std::io::Result<()>,
+        action: fn(
+            state: &mut State,
+            terminal: &mut CrossTerminal,
+            count: usize,
+        ) -> std::io::Result<()>,
     ) -> Self {
         assert!(!keys.is_empty());
         if let KeyCode::Char(c) = keys[0].code {
@@ -56,7 +58,11 @@ impl KeyBinding {
     fn new_single(
         key: KeyBindingPart,
         repeatable: bool,
-        action: fn(state: &mut State, terminal: &mut CrossTerminal, count: usize) -> std::io::Result<()>,
+        action: fn(
+            state: &mut State,
+            terminal: &mut CrossTerminal,
+            count: usize,
+        ) -> std::io::Result<()>,
     ) -> Self {
         Self::new_multi(vec![key], repeatable, action)
     }
@@ -162,7 +168,10 @@ pub fn make_key_sm() -> KeyStateMachine {
             |state, _, _| state.selection_up(),
         ),
         KeyBinding::new_multi(
-            vec![KeyBindingPart::new(KeyCode::Char('g')), KeyBindingPart::new(KeyCode::Char('g'))],
+            vec![
+                KeyBindingPart::new(KeyCode::Char('g')),
+                KeyBindingPart::new(KeyCode::Char('g')),
+            ],
             false,
             |state, _, _| state.selection_top(),
         ),
@@ -171,13 +180,12 @@ pub fn make_key_sm() -> KeyStateMachine {
             false,
             |state, terminal, _| {
                 if let Some(path) = state.selected_file() {
-                    terminal.draw(|f| f.render_widget(Clear, f.size()))?;
-                    execute!(std::io::stdout(), crossterm::terminal::LeaveAlternateScreen)?;
-                    std::process::Command::new(&state.editor)
-                        .arg(path.as_os_str())
-                        .status()?;
+                    crate::util::open_editor(
+                        &state.editor,
+                        vec![path.as_os_str().into()],
+                        terminal,
+                    )?;
                     state.update_file_view_content()?;
-                    execute!(std::io::stdout(), crossterm::terminal::EnterAlternateScreen)?;
                 }
                 Ok(())
             },

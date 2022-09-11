@@ -13,6 +13,10 @@
 * [ ] scrolling
 * [ ] create folder if not existing
 * [ ] immutable state in ui() (only after scrolling)
+* [ ] change nvim's cwd
+* [ ] directly open file from cli (today, the last one, tomorrow, specific date)
+* [ ] show current key chain in footer
+* [ ] remove tilde expansion? (done automatically by shell)
 
 # design decisions
 * [ ] more general as a file browser or only as notes/diary
