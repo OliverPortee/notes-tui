@@ -7,6 +7,7 @@
 * [✓] don't leave any rendered content when exiting
 * [✓] header with folder name
 * [✓] new files
+* [✓] remove tilde expansion (done automatically by shell)
 * [ ] footer for commands/debug text
 * [ ] README.md
 * [ ] help text
@@ -16,7 +17,6 @@
 * [ ] change nvim's cwd
 * [ ] directly open file from cli (today, the last one, tomorrow, specific date)
 * [ ] show current key chain in footer
-* [ ] remove tilde expansion? (done automatically by shell)
 * [ ] select the right file when creating a new one
 * [ ] keybinding actions as non-member functions
 * [ ] go to specific year or month or day

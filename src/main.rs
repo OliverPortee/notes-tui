@@ -3,9 +3,11 @@ use crossterm::{
     execute,
     terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
 };
-use home_dir::HomeDirExt;
 use state::State;
-use std::io::{self, Stdout};
+use std::{
+    io::{self, Stdout},
+    path::PathBuf,
+};
 use tui::{
     backend::{Backend, CrosstermBackend},
     layout::{Constraint, Direction, Layout},
@@ -24,12 +26,10 @@ type CrossTerminal = Terminal<CrosstermBackend<Stdout>>;
 fn main() -> io::Result<()> {
     util::init_logging()?;
 
-    let folder = std::env::args()
+    let folder_path: PathBuf = std::env::args()
         .nth(1)
-        .unwrap_or_else(|| fail("no folder given"));
-    let folder_path = std::path::PathBuf::from(folder)
-        .expand_home()
-        .unwrap_or_else(|_| fail("could not find out HOME directory"));
+        .unwrap_or_else(|| fail("no folder given"))
+        .into();
     if !folder_path.is_dir() {
         fail::<(), String>(format!(
             "path {} is not a directory",
