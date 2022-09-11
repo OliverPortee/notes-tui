@@ -103,6 +103,14 @@ impl State {
         self.update_selection(Some(0))
     }
 
+    pub fn selection_bottom(&mut self) -> Result<()> {
+        if self.files.is_empty() {
+            return Ok(())
+        }
+        let last_index = self.files.len() - 1;
+        self.update_selection(Some(last_index))
+    }
+
     pub fn open_relative_date(&mut self, offset: i64, terminal: &mut CrossTerminal) -> Result<()> {
         let filename = util::format_date(offset);
         let mut path = self.cwd.clone();

@@ -172,6 +172,11 @@ pub fn make_key_sm() -> KeyStateMachine {
             |state, _, _| state.selection_top(),
         ),
         KeyBinding::new_single(
+            KeyBindingPart::new_with_mods(KeyCode::Char('G'), KeyModifiers::SHIFT),
+            false,
+            |state, _, _| state.selection_bottom(),
+        ),
+        KeyBinding::new_single(
             KeyBindingPart::new(KeyCode::Char('o')),
             true,
             |state, terminal, count| state.open_relative_date(count as i64, terminal),
