@@ -74,14 +74,21 @@ impl State {
         Ok(())
     }
 }
+
 pub fn selection_down(state: &mut State, _: &mut CrossTerminal, count: usize) -> Result<()> {
     if state.files.is_empty() {
         return Ok(());
     }
+    let last_index = state.files.len() - 1;
     match state.list_state.selected() {
         None => state.update_selection(Some(0)),
-        Some(i) if i == state.files.len() - 1 => Ok(()),
-        Some(i) => state.update_selection(Some(i + 1)),
+        Some(i) if i == last_index => Ok(()),
+        Some(i) => {
+            let count = if count == 0 { 1 } else { count };
+            let new = i + count;
+            let new = if new > last_index { last_index } else { new };
+            state.update_selection(Some(new))
+        }
     }
 }
 
@@ -92,7 +99,14 @@ pub fn selection_up(state: &mut State, _: &mut CrossTerminal, count: usize) -> R
     match state.list_state.selected() {
         None => state.update_selection(Some(state.files.len() - 1)),
         Some(0) => Ok(()),
-        Some(i) => state.update_selection(Some(i - 1)),
+        Some(i) => {
+            let count = if count == 0 { 1 } else { count };
+            if count > i {
+                state.update_selection(Some(0))
+            } else {
+                state.update_selection(Some(i - count))
+            }
+        }
     }
 }
 
@@ -100,7 +114,10 @@ pub fn selection_top(state: &mut State, _: &mut CrossTerminal, count: usize) -> 
     if state.files.is_empty() {
         return Ok(());
     }
-    state.update_selection(Some(0))
+    let last_index = state.files.len() - 1;
+    let new = if count == 0 { 0 } else { count - 1 };
+    let new = if new > last_index { last_index } else { new };
+    state.update_selection(Some(new))
 }
 
 pub fn selection_bottom(state: &mut State, _: &mut CrossTerminal, count: usize) -> Result<()> {
@@ -108,10 +125,16 @@ pub fn selection_bottom(state: &mut State, _: &mut CrossTerminal, count: usize) 
         return Ok(());
     }
     let last_index = state.files.len() - 1;
-    state.update_selection(Some(last_index))
+    let count = if count == 0 { 0 } else { count - 1 };
+    let new = if count > last_index {
+        0
+    } else {
+        last_index - count
+    };
+    state.update_selection(Some(new))
 }
 
-pub fn open_relative_date(state: &mut State, terminal: &mut CrossTerminal, offset: i64) -> Result<()> {
+fn open_relative_date(state: &mut State, terminal: &mut CrossTerminal, offset: i64) -> Result<()> {
     let filename = util::format_date(offset);
     let mut path = state.cwd.clone();
     path.push(filename);
@@ -122,11 +145,19 @@ pub fn open_relative_date(state: &mut State, terminal: &mut CrossTerminal, offse
     Ok(())
 }
 
-pub fn open_rel_date_fwd(state: &mut State, terminal: &mut CrossTerminal, offset: usize) -> Result<()> {
+pub fn open_rel_date_fwd(
+    state: &mut State,
+    terminal: &mut CrossTerminal,
+    offset: usize,
+) -> Result<()> {
     open_relative_date(state, terminal, offset as i64)
 }
 
-pub fn open_rel_date_bwd(state: &mut State, terminal: &mut CrossTerminal, offset: usize) -> Result<()> {
+pub fn open_rel_date_bwd(
+    state: &mut State,
+    terminal: &mut CrossTerminal,
+    offset: usize,
+) -> Result<()> {
     open_relative_date(state, terminal, -(offset as i64))
 }
 

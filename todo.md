@@ -29,25 +29,26 @@
 ## keybindings
 * [✓] multiple key keybings (gg)
 * [✓] keybinding combinations (C-s)
-* [ ] make repetition work
+* [✓] make repetition work
 * [ ] keybinding configuration via toml
+* [ ] keybinding cheat sheet
 
 ## folders
 
 ## search
 
 ## sort
+* [ ] by name
+* [ ] by creation date
+* [ ] by last modified
+* [ ] by size
+* [ ] by natural ("1" < "10")
 
 ## syntax highlight
 
 # keybindings
 
-<num>j: selection down
-<num>k: selection up
-l: open
 h: exit folder (only when folders implemented)
-gg: to the top
-G: to the bottom
 <C-u>: half page up
 <C-d>: half page down
 dd: delete
