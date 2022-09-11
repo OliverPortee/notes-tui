@@ -9,6 +9,7 @@
 * [✓] new files
 * [✓] remove tilde expansion (done automatically by shell)
 * [✓] immutable state in ui() (only after scrolling)
+* [✓] keybinding actions as non-member functions
 * [ ] footer for commands/debug text
 * [ ] README.md
 * [ ] help text
@@ -17,7 +18,6 @@
 * [ ] directly open file from cli (today, the last one, tomorrow, specific date)
 * [ ] show current key chain in footer
 * [ ] select the right file when creating a new one
-* [ ] keybinding actions as non-member functions
 * [ ] go to specific year or month or day
 * [ ] scroll in the file view?
 

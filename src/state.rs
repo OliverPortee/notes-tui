@@ -73,61 +73,68 @@ impl State {
         self.update_file_view_content()?;
         Ok(())
     }
-
-    pub fn selection_down(&mut self) -> Result<()> {
-        if self.files.is_empty() {
-            return Ok(());
-        }
-        match self.list_state.selected() {
-            None => self.update_selection(Some(0)),
-            Some(i) if i == self.files.len() - 1 => Ok(()),
-            Some(i) => self.update_selection(Some(i + 1)),
-        }
+}
+pub fn selection_down(state: &mut State, _: &mut CrossTerminal, count: usize) -> Result<()> {
+    if state.files.is_empty() {
+        return Ok(());
     }
-
-    pub fn selection_up(&mut self) -> Result<()> {
-        if self.files.is_empty() {
-            return Ok(());
-        }
-        match self.list_state.selected() {
-            None => self.update_selection(Some(self.files.len() - 1)),
-            Some(0) => Ok(()),
-            Some(i) => self.update_selection(Some(i - 1)),
-        }
+    match state.list_state.selected() {
+        None => state.update_selection(Some(0)),
+        Some(i) if i == state.files.len() - 1 => Ok(()),
+        Some(i) => state.update_selection(Some(i + 1)),
     }
+}
 
-    pub fn selection_top(&mut self) -> Result<()> {
-        if self.files.is_empty() {
-            return Ok(());
-        }
-        self.update_selection(Some(0))
+pub fn selection_up(state: &mut State, _: &mut CrossTerminal, count: usize) -> Result<()> {
+    if state.files.is_empty() {
+        return Ok(());
     }
+    match state.list_state.selected() {
+        None => state.update_selection(Some(state.files.len() - 1)),
+        Some(0) => Ok(()),
+        Some(i) => state.update_selection(Some(i - 1)),
+    }
+}
 
-    pub fn selection_bottom(&mut self) -> Result<()> {
-        if self.files.is_empty() {
-            return Ok(())
-        }
-        let last_index = self.files.len() - 1;
-        self.update_selection(Some(last_index))
+pub fn selection_top(state: &mut State, _: &mut CrossTerminal, count: usize) -> Result<()> {
+    if state.files.is_empty() {
+        return Ok(());
     }
+    state.update_selection(Some(0))
+}
 
-    pub fn open_relative_date(&mut self, offset: i64, terminal: &mut CrossTerminal) -> Result<()> {
-        let filename = util::format_date(offset);
-        let mut path = self.cwd.clone();
-        path.push(filename);
-        path.set_extension("md");
-        util::open_editor(&self.editor, vec![path], terminal)?;
-        self.update_files()?;
-        self.update_file_view_content()?;
-        Ok(())
+pub fn selection_bottom(state: &mut State, _: &mut CrossTerminal, count: usize) -> Result<()> {
+    if state.files.is_empty() {
+        return Ok(());
     }
+    let last_index = state.files.len() - 1;
+    state.update_selection(Some(last_index))
+}
 
-    pub fn open_selected(&mut self, terminal: &mut CrossTerminal) -> Result<()> {
-        if let Some(path) = self.selected_file() {
-            util::open_editor(&self.editor, vec![path], terminal)?;
-            self.update_files()?;
-            self.update_file_view_content()?;
-        }
-        Ok(())
+pub fn open_relative_date(state: &mut State, terminal: &mut CrossTerminal, offset: i64) -> Result<()> {
+    let filename = util::format_date(offset);
+    let mut path = state.cwd.clone();
+    path.push(filename);
+    path.set_extension("md");
+    util::open_editor(&state.editor, vec![path], terminal)?;
+    state.update_files()?;
+    state.update_file_view_content()?;
+    Ok(())
+}
+
+pub fn open_rel_date_fwd(state: &mut State, terminal: &mut CrossTerminal, offset: usize) -> Result<()> {
+    open_relative_date(state, terminal, offset as i64)
+}
+
+pub fn open_rel_date_bwd(state: &mut State, terminal: &mut CrossTerminal, offset: usize) -> Result<()> {
+    open_relative_date(state, terminal, -(offset as i64))
+}
+
+pub fn open_selected(state: &mut State, terminal: &mut CrossTerminal, _: usize) -> Result<()> {
+    if let Some(path) = state.selected_file() {
+        util::open_editor(&state.editor, vec![path], terminal)?;
+        state.update_files()?;
+        state.update_file_view_content()?;
     }
+    Ok(())
 }

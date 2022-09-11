@@ -1,4 +1,4 @@
-use crate::{state::State, CrossTerminal};
+use crate::{state::*, CrossTerminal};
 use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 use std::vec;
 
@@ -31,6 +31,10 @@ impl KeyBindingPart {
 
     fn new(code: KeyCode) -> KeyBindingPart {
         Self::new_with_mods(code, KeyModifiers::NONE)
+    }
+
+    fn new_char(c: char) -> KeyBindingPart {
+        Self::new(KeyCode::Char(c))
     }
 }
 
@@ -153,43 +157,23 @@ impl KeyStateMachine {
 
 pub fn make_key_sm() -> KeyStateMachine {
     let kbs: Vec<KeyBinding> = vec![
-        KeyBinding::new_single(
-            KeyBindingPart::new(KeyCode::Char('j')),
-            true,
-            |state, _, _| state.selection_down(),
-        ),
-        KeyBinding::new_single(
-            KeyBindingPart::new(KeyCode::Char('k')),
-            true,
-            |state, _, _| state.selection_up(),
-        ),
+        KeyBinding::new_single(KeyBindingPart::new_char('l'), false, open_selected),
+        KeyBinding::new_single(KeyBindingPart::new_char('j'), true, selection_down),
+        KeyBinding::new_single(KeyBindingPart::new_char('k'), true, selection_up),
+        KeyBinding::new_single(KeyBindingPart::new_char('o'), true, open_rel_date_fwd),
+        KeyBinding::new_single(KeyBindingPart::new_char('b'), true, open_rel_date_bwd),
         KeyBinding::new_multi(
             vec![
                 KeyBindingPart::new(KeyCode::Char('g')),
                 KeyBindingPart::new(KeyCode::Char('g')),
             ],
-            false,
-            |state, _, _| state.selection_top(),
+            true,
+            selection_top,
         ),
         KeyBinding::new_single(
             KeyBindingPart::new_with_mods(KeyCode::Char('G'), KeyModifiers::SHIFT),
-            false,
-            |state, _, _| state.selection_bottom(),
-        ),
-        KeyBinding::new_single(
-            KeyBindingPart::new(KeyCode::Char('o')),
             true,
-            |state, terminal, count| state.open_relative_date(count as i64, terminal),
-        ),
-        KeyBinding::new_single(
-            KeyBindingPart::new(KeyCode::Char('b')),
-            true,
-            |state, terminal, count| state.open_relative_date(-(count as i64), terminal),
-        ),
-        KeyBinding::new_single(
-            KeyBindingPart::new(KeyCode::Char('l')),
-            false,
-            |state, terminal, _| state.open_selected(terminal),
+            selection_bottom,
         ),
     ];
     KeyStateMachine::new(kbs)
