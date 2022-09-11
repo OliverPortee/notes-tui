@@ -5,7 +5,10 @@ use std::path::PathBuf;
 
 use tui::widgets::ListState;
 
-use crate::{keybindings::{make_key_sm, KeyStateMachine}, util, CrossTerminal};
+use crate::{
+    keybindings::{make_key_sm, KeyStateMachine},
+    util, CrossTerminal,
+};
 
 pub struct State {
     pub cwd: PathBuf,
@@ -108,6 +111,15 @@ impl State {
         util::open_editor(&self.editor, vec![path], terminal)?;
         self.update_files()?;
         self.update_file_view_content()?;
+        Ok(())
+    }
+
+    pub fn open_selected(&mut self, terminal: &mut CrossTerminal) -> Result<()> {
+        if let Some(path) = self.selected_file() {
+            util::open_editor(&self.editor, vec![path], terminal)?;
+            self.update_files()?;
+            self.update_file_view_content()?;
+        }
         Ok(())
     }
 }

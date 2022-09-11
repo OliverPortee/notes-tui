@@ -1,4 +1,4 @@
-use crate::{state::State, util, CrossTerminal};
+use crate::{state::State, CrossTerminal};
 use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 use std::vec;
 
@@ -147,7 +147,7 @@ impl KeyStateMachine {
     }
 
     pub fn count(&self) -> usize {
-            self.current_count
+        self.current_count
     }
 }
 
@@ -184,14 +184,7 @@ pub fn make_key_sm() -> KeyStateMachine {
         KeyBinding::new_single(
             KeyBindingPart::new(KeyCode::Char('l')),
             false,
-            |state, terminal, _| {
-                if let Some(path) = state.selected_file() {
-                    util::open_editor(&state.editor, vec![path], terminal)?;
-                    state.update_files()?;
-                    state.update_file_view_content()?;
-                }
-                Ok(())
-            },
+            |state, terminal, _| state.open_selected(terminal),
         ),
     ];
     KeyStateMachine::new(kbs)

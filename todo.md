@@ -20,6 +20,7 @@
 * [ ] select the right file when creating a new one
 * [ ] keybinding actions as non-member functions
 * [ ] go to specific year or month or day
+* [ ] scroll in the file view?
 
 # design decisions
 * [ ] more general as a file browser or only as notes/diary
