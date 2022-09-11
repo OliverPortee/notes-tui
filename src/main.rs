@@ -82,7 +82,7 @@ fn run(mut state: State, mut terminal: CrossTerminal) -> io::Result<()> {
     }
 }
 
-fn ui<B: Backend>(f: &mut Frame<B>, state: &mut State) {
+fn ui<B: Backend>(f: &mut Frame<B>, state: &State) {
     let v_chunks = Layout::default()
         .direction(Direction::Vertical)
         .constraints(vec![
@@ -112,8 +112,8 @@ fn ui<B: Backend>(f: &mut Frame<B>, state: &mut State) {
                 .fg(Color::Black)
                 .add_modifier(Modifier::BOLD),
         );
-    // TODO: clone?!
-    f.render_stateful_widget(list, h_chunks[0], &mut state.list_state.clone());
+    let mut list_state = state.list_state.clone();
+    f.render_stateful_widget(list, h_chunks[0], &mut list_state);
 
     let file_view_block = Block::default();
     let file_view_text = Paragraph::new(state.file_view_content.as_str()).block(file_view_block);

@@ -8,12 +8,11 @@
 * [✓] header with folder name
 * [✓] new files
 * [✓] remove tilde expansion (done automatically by shell)
+* [✓] immutable state in ui() (only after scrolling)
 * [ ] footer for commands/debug text
 * [ ] README.md
 * [ ] help text
-* [ ] scrolling
 * [ ] create folder if not existing
-* [ ] immutable state in ui() (only after scrolling)
 * [ ] change nvim's cwd
 * [ ] directly open file from cli (today, the last one, tomorrow, specific date)
 * [ ] show current key chain in footer
