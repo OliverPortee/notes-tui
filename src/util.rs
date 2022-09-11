@@ -1,8 +1,9 @@
 use std::{
-    ffi::{OsStr, OsString},
+    ffi::OsStr,
     path::PathBuf,
 };
 
+use chrono::{Duration, Local};
 use crossterm::execute;
 
 use crate::CrossTerminal;
@@ -31,14 +32,23 @@ pub fn init_logging() -> std::io::Result<()> {
     Ok(())
 }
 
-pub fn open_editor(
+pub fn open_editor<I, S>(
     editor: &OsStr,
-    args: Vec<OsString>,
+    args: I,
     terminal: &mut CrossTerminal,
-) -> std::io::Result<()> {
+) -> std::io::Result<()>
+where
+    I: IntoIterator<Item = S>,
+    S: AsRef<OsStr>,
+{
     execute!(std::io::stdout(), crossterm::terminal::LeaveAlternateScreen)?;
     std::process::Command::new(editor).args(args).status()?;
     execute!(std::io::stdout(), crossterm::terminal::EnterAlternateScreen)?;
     terminal.clear()?;
     Ok(())
+}
+
+pub fn format_date(offset: i64) -> String {
+    let now = Local::now() + Duration::days(offset);
+    format!("{}", now.format("%Y-%m-%d"))
 }

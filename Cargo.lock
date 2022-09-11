@@ -320,6 +320,7 @@ dependencies = [
 name = "notes-tui"
 version = "0.1.0"
 dependencies = [
+ "chrono",
  "crossterm",
  "home-dir",
  "simple-log",

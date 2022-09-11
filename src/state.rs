@@ -1,12 +1,11 @@
 use std::ffi::OsString;
-use std::{io::Result};
+use std::io::Result;
 
 use std::path::PathBuf;
 
 use tui::widgets::ListState;
 
-use crate::keybindings::{KeyStateMachine, make_key_sm};
-
+use crate::{keybindings::{make_key_sm, KeyStateMachine}, util, CrossTerminal};
 
 pub struct State {
     pub cwd: PathBuf,
@@ -99,5 +98,16 @@ impl State {
             return Ok(());
         }
         self.update_selection(Some(0))
+    }
+
+    pub fn open_relative_date(&mut self, offset: i64, terminal: &mut CrossTerminal) -> Result<()> {
+        let filename = util::format_date(offset);
+        let mut path = self.cwd.clone();
+        path.push(filename);
+        path.set_extension("md");
+        util::open_editor(&self.editor, vec![path], terminal)?;
+        self.update_files()?;
+        self.update_file_view_content()?;
+        Ok(())
     }
 }
