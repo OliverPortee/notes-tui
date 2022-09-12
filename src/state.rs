@@ -210,7 +210,7 @@ pub mod updates {
         let mut path = state.cwd.clone();
         path.push(filename);
         path.set_extension("md");
-        util::open_editor(&state.editor, vec![&path], terminal)?;
+        util::open_editor(&state.editor, vec![&path], terminal, &state.cwd)?;
         state.update_files()?;
         let index = state.files.iter().position(|f| f.path == path);
         if let Some(index) = index {
@@ -239,7 +239,7 @@ pub mod updates {
     pub fn open_selected(state: &mut State, terminal: &mut CrossTerminal, _: usize) -> Result<()> {
         if let Some(file) = state.selected_file() {
             let path = file.path.clone();
-            util::open_editor(&state.editor, vec![&file.path], terminal)?;
+            util::open_editor(&state.editor, vec![&file.path], terminal, &state.cwd)?;
             state.update_files()?;
             let index = state.files.iter().position(|f| f.path == path);
             if let Some(index) = index {

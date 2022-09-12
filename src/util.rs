@@ -1,6 +1,6 @@
 use std::{
-    ffi::OsStr,
-    path::PathBuf,
+    ffi::{OsStr, OsString},
+    path::{Path, PathBuf},
 };
 
 use chrono::{Duration, Local};
@@ -32,17 +32,35 @@ pub fn init_logging() -> std::io::Result<()> {
     Ok(())
 }
 
+fn is_vim(editor: &OsStr) -> bool {
+    let path = PathBuf::from(editor);
+    let filename = path.file_name().unwrap();
+    return filename == "nvim" || filename == "vim";
+}
+
 pub fn open_editor<I, S>(
     editor: &OsStr,
     args: I,
     terminal: &mut CrossTerminal,
+    working_directory: &Path,
 ) -> std::io::Result<()>
 where
     I: IntoIterator<Item = S>,
     S: AsRef<OsStr>,
 {
     execute!(std::io::stdout(), crossterm::terminal::LeaveAlternateScreen)?;
-    std::process::Command::new(editor).args(args).status()?;
+    // ugly hack for changing vim's working directory
+    if is_vim(editor) {
+        let mut cd_prompt = OsString::from("cd ");
+        cd_prompt.push(working_directory.as_os_str());
+        std::process::Command::new(editor)
+            .arg("-c")
+            .arg(cd_prompt)
+            .args(args)
+            .status()?;
+    } else {
+        std::process::Command::new(editor).args(args).status()?;
+    }
     execute!(std::io::stdout(), crossterm::terminal::EnterAlternateScreen)?;
     terminal.clear()?;
     Ok(())

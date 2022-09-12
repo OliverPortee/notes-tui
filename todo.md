@@ -12,11 +12,11 @@
 * [✓] keybinding actions as non-member functions
 * [✓] show current key chain in footer
 * [✓] delete files
+* [✓] change nvim's cwd
 * [ ] visual mode
 * [ ] README.md
 * [ ] help text
 * [ ] create folder if not existing
-* [ ] change nvim's cwd
 * [ ] directly open file from cli (today, the last one, tomorrow, specific date)
 * [ ] select the right file when creating a new one
 * [ ] go to specific year or month or day
