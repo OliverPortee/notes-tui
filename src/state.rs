@@ -265,8 +265,13 @@ pub mod updates {
     }
 
     pub fn reverse_sort(state: &mut State, _: &mut CrossTerminal, _: usize) -> Result<()> {
+        let f = state.selected_file().map(FileInfo::clone);
         state.reverse_sort = !state.reverse_sort;
         state.files.reverse();
+        if let Some(f) = f {
+            let new_selection = state.files.iter().position(|other| *other == f).unwrap();
+            state.update_selection(Some(new_selection));
+        }
         Ok(())
     }
 }
