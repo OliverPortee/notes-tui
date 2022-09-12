@@ -78,20 +78,27 @@ impl State {
             .collect();
         if self.files.is_empty() {
             self.update_selection(None);
-            self.update_file_view_content()?;
+        } else if let Some(index) = self.list_state.selected() {
+            if index >= self.files.len() {
+                self.update_selection(Some(self.files.len() - 1));
+            }
         }
         self.update_sort();
         Ok(())
     }
 
     pub fn update_sort(&mut self) {
-        let f = self.selected_file().map(FileInfo::clone);
+        let path = self.selected_file().map(|f| f.path.clone());
         sort_files(&mut self.files, &self.sorting);
         if self.reverse_sort {
             self.files.reverse();
         }
-        if let Some(f) = f {
-            let new_selection = self.files.iter().position(|other| *other == f).unwrap();
+        if let Some(path) = path {
+            let new_selection = self
+                .files
+                .iter()
+                .position(|other| other.path == path)
+                .unwrap();
             self.update_selection(Some(new_selection));
         }
     }
@@ -203,8 +210,12 @@ pub mod updates {
         let mut path = state.cwd.clone();
         path.push(filename);
         path.set_extension("md");
-        util::open_editor(&state.editor, vec![path], terminal)?;
+        util::open_editor(&state.editor, vec![&path], terminal)?;
         state.update_files()?;
+        let index = state.files.iter().position(|f| f.path == path);
+        if let Some(index) = index {
+            state.update_selection(Some(index));
+        }
         state.update_file_view_content()?;
         Ok(())
     }
@@ -227,8 +238,13 @@ pub mod updates {
 
     pub fn open_selected(state: &mut State, terminal: &mut CrossTerminal, _: usize) -> Result<()> {
         if let Some(file) = state.selected_file() {
+            let path = file.path.clone();
             util::open_editor(&state.editor, vec![&file.path], terminal)?;
             state.update_files()?;
+            let index = state.files.iter().position(|f| f.path == path);
+            if let Some(index) = index {
+                state.update_selection(Some(index));
+            }
             state.update_file_view_content()?;
         }
         Ok(())

@@ -21,6 +21,7 @@
 * [ ] select the right file when creating a new one
 * [ ] go to specific year or month or day
 * [ ] scroll in the file view?
+* [ ] confirm before deleting a file
 
 # features
 
