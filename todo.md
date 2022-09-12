@@ -10,9 +10,9 @@
 * [✓] remove tilde expansion (done automatically by shell)
 * [✓] immutable state in ui() (only after scrolling)
 * [✓] keybinding actions as non-member functions
+* [ ] footer for commands/debug text
 * [ ] delete files
 * [ ] visual mode
-* [ ] footer for commands/debug text
 * [ ] README.md
 * [ ] help text
 * [ ] create folder if not existing

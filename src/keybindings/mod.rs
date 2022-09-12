@@ -1,6 +1,7 @@
 use crate::{state::*, CrossTerminal};
 use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
-use std::vec;
+
+pub mod example;
 
 #[derive(PartialEq, Eq, Clone, Copy)]
 struct KeyBindingPart {
@@ -25,16 +26,12 @@ pub struct KeyStateMachine {
 }
 
 impl KeyBindingPart {
-    fn new_with_mods(code: KeyCode, modifiers: KeyModifiers) -> KeyBindingPart {
+    fn new(code: KeyCode, modifiers: KeyModifiers) -> KeyBindingPart {
         KeyBindingPart { code, modifiers }
     }
 
-    fn new(code: KeyCode) -> KeyBindingPart {
-        Self::new_with_mods(code, KeyModifiers::NONE)
-    }
-
     fn new_char(c: char) -> KeyBindingPart {
-        Self::new(KeyCode::Char(c))
+        Self::new(KeyCode::Char(c), KeyModifiers::NONE)
     }
 }
 
@@ -157,30 +154,4 @@ impl KeyStateMachine {
     pub fn count(&self) -> usize {
         self.current_count
     }
-}
-
-pub fn make_key_sm() -> KeyStateMachine {
-    let kbs: Vec<KeyBinding> = vec![
-        KeyBinding::new_from_chars("l", false, open_selected),
-        KeyBinding::new_from_chars("j", true, selection_down),
-        KeyBinding::new_from_chars("k", true, selection_up),
-        KeyBinding::new_from_chars("o", true, open_rel_date_fwd),
-        KeyBinding::new_from_chars("b", true, open_rel_date_bwd),
-        KeyBinding::new_from_chars("gg", true, selection_top),
-        KeyBinding::new_from_chars("sn", false, sort_by_natural),
-        KeyBinding::new_from_chars("ss", false, sort_by_size),
-        KeyBinding::new_from_chars("sc", false, sort_by_ctime),
-        KeyBinding::new_from_chars("sm", false, sort_by_mtime),
-        KeyBinding::new_from_chars("sa", false, sort_by_name),
-        KeyBinding::new_from_chars("sr", false, reverse_sort),
-        KeyBinding::new(
-            vec![KeyBindingPart::new_with_mods(
-                KeyCode::Char('G'),
-                KeyModifiers::SHIFT,
-            )],
-            true,
-            selection_bottom,
-        ),
-    ];
-    KeyStateMachine::new(kbs)
 }

@@ -6,7 +6,7 @@ use std::path::PathBuf;
 use tui::widgets::ListState;
 
 use crate::{
-    keybindings::{make_key_sm, KeyStateMachine},
+    keybindings::{example, KeyStateMachine},
     sorting::{sort_files, Sorting},
     util, CrossTerminal,
 };
@@ -46,7 +46,7 @@ impl State {
             files: Vec::new(),
             list_state: ListState::default(),
             file_view_content: String::new(),
-            key_state_machine: make_key_sm(),
+            key_state_machine: KeyStateMachine::new(example::keybindings()),
             editor,
             sorting,
             reverse_sort,
@@ -127,137 +127,146 @@ impl State {
     }
 }
 
-pub fn selection_down(state: &mut State, _: &mut CrossTerminal, count: usize) -> Result<()> {
-    if state.files.is_empty() {
-        return Ok(());
-    }
-    let last_index = state.files.len() - 1;
-    match state.list_state.selected() {
-        None => state.update_selection(Some(0)),
-        Some(i) if i == last_index => {}
-        Some(i) => {
-            let count = if count == 0 { 1 } else { count };
-            let new = i + count;
-            let new = if new > last_index { last_index } else { new };
-            state.update_selection(Some(new))
-        }
-    }
-    state.update_file_view_content()
-}
+pub mod updates {
 
-pub fn selection_up(state: &mut State, _: &mut CrossTerminal, count: usize) -> Result<()> {
-    if state.files.is_empty() {
-        return Ok(());
-    }
-    match state.list_state.selected() {
-        None => state.update_selection(Some(state.files.len() - 1)),
-        Some(0) => {}
-        Some(i) => {
-            let count = if count == 0 { 1 } else { count };
-            if count > i {
-                state.update_selection(Some(0))
-            } else {
-                state.update_selection(Some(i - count))
+    use super::*;
+
+    pub fn selection_down(state: &mut State, _: &mut CrossTerminal, count: usize) -> Result<()> {
+        if state.files.is_empty() {
+            return Ok(());
+        }
+        let last_index = state.files.len() - 1;
+        match state.list_state.selected() {
+            None => state.update_selection(Some(0)),
+            Some(i) if i == last_index => {}
+            Some(i) => {
+                let count = if count == 0 { 1 } else { count };
+                let new = i + count;
+                let new = if new > last_index { last_index } else { new };
+                state.update_selection(Some(new))
             }
         }
+        state.update_file_view_content()
     }
-    state.update_file_view_content()
-}
 
-pub fn selection_top(state: &mut State, _: &mut CrossTerminal, count: usize) -> Result<()> {
-    if state.files.is_empty() {
-        return Ok(());
+    pub fn selection_up(state: &mut State, _: &mut CrossTerminal, count: usize) -> Result<()> {
+        if state.files.is_empty() {
+            return Ok(());
+        }
+        match state.list_state.selected() {
+            None => state.update_selection(Some(state.files.len() - 1)),
+            Some(0) => {}
+            Some(i) => {
+                let count = if count == 0 { 1 } else { count };
+                if count > i {
+                    state.update_selection(Some(0))
+                } else {
+                    state.update_selection(Some(i - count))
+                }
+            }
+        }
+        state.update_file_view_content()
     }
-    let last_index = state.files.len() - 1;
-    let new = if count == 0 { 0 } else { count - 1 };
-    let new = if new > last_index { last_index } else { new };
-    state.update_selection(Some(new));
-    state.update_file_view_content()
-}
 
-pub fn selection_bottom(state: &mut State, _: &mut CrossTerminal, count: usize) -> Result<()> {
-    if state.files.is_empty() {
-        return Ok(());
+    pub fn selection_top(state: &mut State, _: &mut CrossTerminal, count: usize) -> Result<()> {
+        if state.files.is_empty() {
+            return Ok(());
+        }
+        let last_index = state.files.len() - 1;
+        let new = if count == 0 { 0 } else { count - 1 };
+        let new = if new > last_index { last_index } else { new };
+        state.update_selection(Some(new));
+        state.update_file_view_content()
     }
-    let last_index = state.files.len() - 1;
-    let count = if count == 0 { 0 } else { count - 1 };
-    let new = if count > last_index {
-        0
-    } else {
-        last_index - count
-    };
-    state.update_selection(Some(new));
-    state.update_file_view_content()
-}
 
-fn open_relative_date(state: &mut State, terminal: &mut CrossTerminal, offset: i64) -> Result<()> {
-    let filename = util::format_date(offset);
-    let mut path = state.cwd.clone();
-    path.push(filename);
-    path.set_extension("md");
-    util::open_editor(&state.editor, vec![path], terminal)?;
-    state.update_files()?;
-    state.update_file_view_content()?;
-    Ok(())
-}
+    pub fn selection_bottom(state: &mut State, _: &mut CrossTerminal, count: usize) -> Result<()> {
+        if state.files.is_empty() {
+            return Ok(());
+        }
+        let last_index = state.files.len() - 1;
+        let count = if count == 0 { 0 } else { count - 1 };
+        let new = if count > last_index {
+            0
+        } else {
+            last_index - count
+        };
+        state.update_selection(Some(new));
+        state.update_file_view_content()
+    }
 
-pub fn open_rel_date_fwd(
-    state: &mut State,
-    terminal: &mut CrossTerminal,
-    offset: usize,
-) -> Result<()> {
-    open_relative_date(state, terminal, offset as i64)
-}
-
-pub fn open_rel_date_bwd(
-    state: &mut State,
-    terminal: &mut CrossTerminal,
-    offset: usize,
-) -> Result<()> {
-    open_relative_date(state, terminal, -(offset as i64))
-}
-
-pub fn open_selected(state: &mut State, terminal: &mut CrossTerminal, _: usize) -> Result<()> {
-    if let Some(file) = state.selected_file() {
-        util::open_editor(&state.editor, vec![&file.path], terminal)?;
+    fn open_relative_date(
+        state: &mut State,
+        terminal: &mut CrossTerminal,
+        offset: i64,
+    ) -> Result<()> {
+        let filename = util::format_date(offset);
+        let mut path = state.cwd.clone();
+        path.push(filename);
+        path.set_extension("md");
+        util::open_editor(&state.editor, vec![path], terminal)?;
         state.update_files()?;
         state.update_file_view_content()?;
+        Ok(())
     }
-    Ok(())
-}
 
-pub fn sort_by_name(state: &mut State, _: &mut CrossTerminal, _: usize) -> Result<()> {
-    state.sorting = Sorting::Name;
-    state.update_sort();
-    Ok(())
-}
+    pub fn open_rel_date_fwd(
+        state: &mut State,
+        terminal: &mut CrossTerminal,
+        offset: usize,
+    ) -> Result<()> {
+        open_relative_date(state, terminal, offset as i64)
+    }
 
-pub fn sort_by_ctime(state: &mut State, _: &mut CrossTerminal, _: usize) -> Result<()> {
-    state.sorting = Sorting::Ctime;
-    state.update_sort();
-    Ok(())
-}
+    pub fn open_rel_date_bwd(
+        state: &mut State,
+        terminal: &mut CrossTerminal,
+        offset: usize,
+    ) -> Result<()> {
+        open_relative_date(state, terminal, -(offset as i64))
+    }
 
-pub fn sort_by_mtime(state: &mut State, _: &mut CrossTerminal, _: usize) -> Result<()> {
-    state.sorting = Sorting::Mtime;
-    state.update_sort();
-    Ok(())
-}
+    pub fn open_selected(state: &mut State, terminal: &mut CrossTerminal, _: usize) -> Result<()> {
+        if let Some(file) = state.selected_file() {
+            util::open_editor(&state.editor, vec![&file.path], terminal)?;
+            state.update_files()?;
+            state.update_file_view_content()?;
+        }
+        Ok(())
+    }
 
-pub fn sort_by_size(state: &mut State, _: &mut CrossTerminal, _: usize) -> Result<()> {
-    state.sorting = Sorting::Size;
-    state.update_sort();
-    Ok(())
-}
+    pub fn sort_by_name(state: &mut State, _: &mut CrossTerminal, _: usize) -> Result<()> {
+        state.sorting = Sorting::Name;
+        state.update_sort();
+        Ok(())
+    }
 
-pub fn sort_by_natural(state: &mut State, _: &mut CrossTerminal, _: usize) -> Result<()> {
-    state.sorting = Sorting::Natural;
-    state.update_sort();
-    Ok(())
-}
+    pub fn sort_by_ctime(state: &mut State, _: &mut CrossTerminal, _: usize) -> Result<()> {
+        state.sorting = Sorting::Ctime;
+        state.update_sort();
+        Ok(())
+    }
 
-pub fn reverse_sort(state: &mut State, _: &mut CrossTerminal, _: usize) -> Result<()> {
-    state.reverse_sort = !state.reverse_sort;
-    state.files.reverse();
-    Ok(())
+    pub fn sort_by_mtime(state: &mut State, _: &mut CrossTerminal, _: usize) -> Result<()> {
+        state.sorting = Sorting::Mtime;
+        state.update_sort();
+        Ok(())
+    }
+
+    pub fn sort_by_size(state: &mut State, _: &mut CrossTerminal, _: usize) -> Result<()> {
+        state.sorting = Sorting::Size;
+        state.update_sort();
+        Ok(())
+    }
+
+    pub fn sort_by_natural(state: &mut State, _: &mut CrossTerminal, _: usize) -> Result<()> {
+        state.sorting = Sorting::Natural;
+        state.update_sort();
+        Ok(())
+    }
+
+    pub fn reverse_sort(state: &mut State, _: &mut CrossTerminal, _: usize) -> Result<()> {
+        state.reverse_sort = !state.reverse_sort;
+        state.files.reverse();
+        Ok(())
+    }
 }
