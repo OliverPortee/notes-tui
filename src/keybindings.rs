@@ -39,7 +39,7 @@ impl KeyBindingPart {
 }
 
 impl KeyBinding {
-    fn new_multi(
+    fn new(
         keys: Vec<KeyBindingPart>,
         repeatable: bool,
         action: fn(
@@ -59,8 +59,8 @@ impl KeyBinding {
         }
     }
 
-    fn new_single(
-        key: KeyBindingPart,
+    fn new_from_chars<S: Into<String>>(
+        chars: S,
         repeatable: bool,
         action: fn(
             state: &mut State,
@@ -68,7 +68,11 @@ impl KeyBinding {
             count: usize,
         ) -> std::io::Result<()>,
     ) -> Self {
-        Self::new_multi(vec![key], repeatable, action)
+        Self::new(
+            chars.into().chars().map(KeyBindingPart::new_char).collect(),
+            repeatable,
+            action,
+        )
     }
 }
 
@@ -157,21 +161,17 @@ impl KeyStateMachine {
 
 pub fn make_key_sm() -> KeyStateMachine {
     let kbs: Vec<KeyBinding> = vec![
-        KeyBinding::new_single(KeyBindingPart::new_char('l'), false, open_selected),
-        KeyBinding::new_single(KeyBindingPart::new_char('j'), true, selection_down),
-        KeyBinding::new_single(KeyBindingPart::new_char('k'), true, selection_up),
-        KeyBinding::new_single(KeyBindingPart::new_char('o'), true, open_rel_date_fwd),
-        KeyBinding::new_single(KeyBindingPart::new_char('b'), true, open_rel_date_bwd),
-        KeyBinding::new_multi(
-            vec![
-                KeyBindingPart::new(KeyCode::Char('g')),
-                KeyBindingPart::new(KeyCode::Char('g')),
-            ],
-            true,
-            selection_top,
-        ),
-        KeyBinding::new_single(
-            KeyBindingPart::new_with_mods(KeyCode::Char('G'), KeyModifiers::SHIFT),
+        KeyBinding::new_from_chars("l", false, open_selected),
+        KeyBinding::new_from_chars("j", true, selection_down),
+        KeyBinding::new_from_chars("k", true, selection_up),
+        KeyBinding::new_from_chars("o", true, open_rel_date_fwd),
+        KeyBinding::new_from_chars("b", true, open_rel_date_bwd),
+        KeyBinding::new_from_chars("gg", true, selection_top),
+        KeyBinding::new(
+            vec![KeyBindingPart::new_with_mods(
+                KeyCode::Char('G'),
+                KeyModifiers::SHIFT,
+            )],
             true,
             selection_bottom,
         ),
