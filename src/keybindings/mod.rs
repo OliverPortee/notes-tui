@@ -2,9 +2,10 @@ use crate::{state::*, CrossTerminal};
 use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 
 pub mod example;
+mod serde;
 
 #[derive(PartialEq, Eq, Clone, Copy)]
-struct KeyBindingPart {
+pub struct KeyBindingPart {
     code: KeyCode,
     modifiers: KeyModifiers,
 }
@@ -20,9 +21,10 @@ pub struct KeyBinding {
 pub struct KeyStateMachine {
     key_bindings: Vec<KeyBinding>,
     current_count: usize,
-    current_keys: Vec<KeyBindingPart>,
+    pub current_keys: Vec<KeyBindingPart>,
     current_bindings: Vec<usize>,
     is_done: bool,
+    key_count_after_number: usize,
 }
 
 impl KeyBindingPart {
@@ -82,6 +84,7 @@ impl KeyStateMachine {
             current_keys: Vec::new(),
             current_bindings: (0..len).collect(),
             is_done: false,
+            key_count_after_number: 0,
         }
     }
 
@@ -99,23 +102,23 @@ impl KeyStateMachine {
         if self.is_done {
             self.reset();
         }
-
-        if self.current_keys.is_empty() && e.modifiers == KeyModifiers::NONE {
-            if let KeyCode::Char(char) = e.code {
-                if let Some(digit) = char.to_digit(10) {
-                    self.count_digit(digit);
-                    return None;
-                }
-            }
-        }
+        
         let key_binding_part = KeyBindingPart {
             code: e.code,
             modifiers: e.modifiers,
         };
 
-        let index = self.current_keys.len();
+        if self.current_keys.is_empty() && e.modifiers == KeyModifiers::NONE {
+            if let KeyCode::Char(char) = e.code {
+                if let Some(digit) = char.to_digit(10) {
+                    self.count_digit(digit);
+                    self.current_keys.push(key_binding_part);
+                    return None;
+                }
+            }
+        }
 
-        if index == 0 && self.current_count > 1 {
+        if self.key_count_after_number == 0 && self.current_count > 1 {
             self.current_bindings.retain(|binding_index| {
                 let binding = &self.key_bindings[*binding_index];
                 binding.repeatable
@@ -124,7 +127,7 @@ impl KeyStateMachine {
 
         self.current_bindings.retain(|binding_index| {
             let binding = &self.key_bindings[*binding_index];
-            binding.keys[index] == key_binding_part
+            binding.keys[self.key_count_after_number] == key_binding_part
         });
 
         if self.current_bindings.is_empty() {
@@ -133,10 +136,11 @@ impl KeyStateMachine {
         }
 
         self.current_keys.push(key_binding_part);
+        self.key_count_after_number += 1;
 
         for binding_index in self.current_bindings.iter() {
             let binding = self.key_bindings[*binding_index].clone();
-            if index + 1 == binding.keys.len() {
+            if self.key_count_after_number == binding.keys.len() {
                 self.is_done = true;
                 return Some(binding);
             }
@@ -149,6 +153,7 @@ impl KeyStateMachine {
         self.current_keys = Vec::new();
         self.current_bindings = (0..self.key_bindings.len()).collect();
         self.is_done = false;
+        self.key_count_after_number = 0;
     }
 
     pub fn count(&self) -> usize {

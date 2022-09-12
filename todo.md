@@ -10,7 +10,7 @@
 * [✓] remove tilde expansion (done automatically by shell)
 * [✓] immutable state in ui() (only after scrolling)
 * [✓] keybinding actions as non-member functions
-* [ ] footer for commands/debug text
+* [✓] show current key chain in footer
 * [ ] delete files
 * [ ] visual mode
 * [ ] README.md
@@ -18,7 +18,6 @@
 * [ ] create folder if not existing
 * [ ] change nvim's cwd
 * [ ] directly open file from cli (today, the last one, tomorrow, specific date)
-* [ ] show current key chain in footer
 * [ ] select the right file when creating a new one
 * [ ] go to specific year or month or day
 * [ ] scroll in the file view?

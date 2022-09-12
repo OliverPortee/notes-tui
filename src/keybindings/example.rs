@@ -1,6 +1,6 @@
 use crossterm::event::{KeyCode, KeyModifiers};
 
-use super::{KeyBindingPart, KeyBinding};
+use super::{KeyBinding, KeyBindingPart};
 use crate::state::updates::*;
 
 pub fn keybindings() -> Vec<KeyBinding> {
@@ -18,12 +18,16 @@ pub fn keybindings() -> Vec<KeyBinding> {
         KeyBinding::new_from_chars("sa", false, sort_by_name),
         KeyBinding::new_from_chars("sr", false, reverse_sort),
         KeyBinding::new(
-            vec![KeyBindingPart::new(
-                KeyCode::Char('G'),
-                KeyModifiers::SHIFT,
-            )],
+            vec![KeyBindingPart::new(KeyCode::Char('G'), KeyModifiers::SHIFT)],
             true,
             selection_bottom,
         ),
+        KeyBinding::new(vec![
+            KeyBindingPart::new(KeyCode::Enter, KeyModifiers::NONE),
+            KeyBindingPart::new(KeyCode::Backspace, KeyModifiers::NONE),
+            KeyBindingPart::new(KeyCode::Char('t'), KeyModifiers::CONTROL | KeyModifiers::ALT),
+            KeyBindingPart::new(KeyCode::Char('n'), KeyModifiers::CONTROL),
+            KeyBindingPart::new(KeyCode::Tab, KeyModifiers::NONE),
+        ], false, |_,_,_| Ok(())),
     ]
 }

@@ -3,6 +3,7 @@ use crossterm::{
     execute,
     terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
 };
+use keybindings::KeyBindingPart;
 use sorting::Sorting;
 use state::State;
 use std::{
@@ -93,9 +94,21 @@ fn ui<B: Backend>(f: &mut Frame<B>, state: &State) {
             Constraint::Length(2),
         ])
         .split(f.size());
-    let paragraph = Paragraph::new(state.cwd.as_os_str().to_string_lossy())
+    let header = Paragraph::new(state.cwd.as_os_str().to_string_lossy())
         .block(Block::default().borders(Borders::BOTTOM));
-    f.render_widget(paragraph, v_chunks[0]);
+    f.render_widget(header, v_chunks[0]);
+
+    let footer = Paragraph::new(
+        state
+            .key_state_machine
+            .current_keys
+            .iter()
+            .map(KeyBindingPart::to_string)
+            .collect::<Vec<String>>()
+            .join(""),
+    ).block(Block::default().borders(Borders::TOP));
+    f.render_widget(footer, v_chunks[2]);
+
     let h_chunks = Layout::default()
         .direction(Direction::Horizontal)
         .constraints(vec![
