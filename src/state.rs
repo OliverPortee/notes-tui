@@ -35,10 +35,11 @@ pub struct State {
     pub key_state_machine: KeyStateMachine,
     editor: OsString,
     sorting: Sorting,
+    reverse_sort: bool,
 }
 
 impl State {
-    pub fn new(cwd: PathBuf, editor: OsString, sorting: Sorting) -> Self {
+    pub fn new(cwd: PathBuf, editor: OsString, sorting: Sorting, reverse_sort: bool) -> Self {
         assert!(cwd.is_dir());
         State {
             cwd,
@@ -48,6 +49,7 @@ impl State {
             key_state_machine: make_key_sm(),
             editor,
             sorting,
+            reverse_sort,
         }
     }
 
@@ -78,12 +80,16 @@ impl State {
             self.update_selection(None);
             self.update_file_view_content()?;
         }
+        self.update_sort();
         Ok(())
     }
 
     pub fn update_sort(&mut self) {
         let f = self.selected_file().map(FileInfo::clone);
         sort_files(&mut self.files, &self.sorting);
+        if self.reverse_sort {
+            self.files.reverse();
+        }
         if let Some(f) = f {
             let new_selection = self.files.iter().position(|other| *other == f).unwrap();
             self.update_selection(Some(new_selection));
@@ -192,7 +198,6 @@ fn open_relative_date(state: &mut State, terminal: &mut CrossTerminal, offset: i
     util::open_editor(&state.editor, vec![path], terminal)?;
     state.update_files()?;
     state.update_file_view_content()?;
-    state.update_sort();
     Ok(())
 }
 
@@ -217,7 +222,6 @@ pub fn open_selected(state: &mut State, terminal: &mut CrossTerminal, _: usize) 
         util::open_editor(&state.editor, vec![&file.path], terminal)?;
         state.update_files()?;
         state.update_file_view_content()?;
-        state.update_sort();
     }
     Ok(())
 }
@@ -249,5 +253,11 @@ pub fn sort_by_size(state: &mut State, _: &mut CrossTerminal, _: usize) -> Resul
 pub fn sort_by_natural(state: &mut State, _: &mut CrossTerminal, _: usize) -> Result<()> {
     state.sorting = Sorting::Natural;
     state.update_sort();
+    Ok(())
+}
+
+pub fn reverse_sort(state: &mut State, _: &mut CrossTerminal, _: usize) -> Result<()> {
+    state.reverse_sort = !state.reverse_sort;
+    state.files.reverse();
     Ok(())
 }

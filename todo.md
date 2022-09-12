@@ -46,7 +46,7 @@
 * [✓] by last modified
 * [✓] by size
 * [✓] by natural ("1" < "10")
-* [ ] reverse sort
+* [✓] reverse sort
 
 ## syntax highlight
 

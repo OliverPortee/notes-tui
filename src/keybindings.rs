@@ -172,6 +172,7 @@ pub fn make_key_sm() -> KeyStateMachine {
         KeyBinding::new_from_chars("sc", false, sort_by_ctime),
         KeyBinding::new_from_chars("sm", false, sort_by_mtime),
         KeyBinding::new_from_chars("sa", false, sort_by_name),
+        KeyBinding::new_from_chars("sr", false, reverse_sort),
         KeyBinding::new(
             vec![KeyBindingPart::new_with_mods(
                 KeyCode::Char('G'),

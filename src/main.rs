@@ -49,9 +49,8 @@ fn main() -> io::Result<()> {
         .or_else(|| std::env::var_os("EDITOR"))
         .unwrap_or_else(|| fail("could not find $VISUAL or $EDITOR"));
 
-    let mut state = State::new(folder_path, editor, Sorting::Natural);
+    let mut state = State::new(folder_path, editor, Sorting::Natural, false);
     state.update_files()?;
-    state.update_sort();
 
     run(state, terminal)?;
 
