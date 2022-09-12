@@ -274,4 +274,25 @@ pub mod updates {
         }
         Ok(())
     }
+
+    pub fn delete_file(state: &mut State, _: &mut CrossTerminal, count: usize) -> Result<()> {
+        let count = if count == 0 { 1 } else { count };
+        for _ in 0..count {
+            if let Some(index) = state.list_state.selected() {
+                let file = &state.files[index];
+                std::fs::remove_file(&file.path)?;
+                state.files.remove(index);
+                if state.files.is_empty() {
+                    state.update_selection(None);
+                    break;
+                }
+                if index >= state.files.len() {
+                    state.update_selection(Some(state.files.len() - 1));
+                }
+            }
+        }
+        state.update_file_view_content()?;
+
+        Ok(())
+    }
 }

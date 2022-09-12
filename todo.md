@@ -11,7 +11,7 @@
 * [✓] immutable state in ui() (only after scrolling)
 * [✓] keybinding actions as non-member functions
 * [✓] show current key chain in footer
-* [ ] delete files
+* [✓] delete files
 * [ ] visual mode
 * [ ] README.md
 * [ ] help text

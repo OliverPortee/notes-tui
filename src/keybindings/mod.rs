@@ -108,7 +108,7 @@ impl KeyStateMachine {
             modifiers: e.modifiers,
         };
 
-        if self.current_keys.is_empty() && e.modifiers == KeyModifiers::NONE {
+        if self.key_count_after_number == 0 && e.modifiers == KeyModifiers::NONE {
             if let KeyCode::Char(char) = e.code {
                 if let Some(digit) = char.to_digit(10) {
                     self.count_digit(digit);

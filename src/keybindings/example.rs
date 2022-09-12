@@ -17,6 +17,7 @@ pub fn keybindings() -> Vec<KeyBinding> {
         KeyBinding::new_from_chars("sm", false, sort_by_mtime),
         KeyBinding::new_from_chars("sa", false, sort_by_name),
         KeyBinding::new_from_chars("sr", false, reverse_sort),
+        KeyBinding::new_from_chars("dd", true, delete_file),
         KeyBinding::new(
             vec![KeyBindingPart::new(KeyCode::Char('G'), KeyModifiers::SHIFT)],
             true,
