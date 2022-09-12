@@ -3,6 +3,7 @@ use crossterm::{
     execute,
     terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
 };
+use sorting::Sorting;
 use state::State;
 use std::{
     io::{self, Stdout},
@@ -18,6 +19,7 @@ use tui::{
 use util::fail;
 
 mod keybindings;
+mod sorting;
 mod state;
 mod util;
 
@@ -47,8 +49,9 @@ fn main() -> io::Result<()> {
         .or_else(|| std::env::var_os("EDITOR"))
         .unwrap_or_else(|| fail("could not find $VISUAL or $EDITOR"));
 
-    let mut state = State::new(folder_path, editor);
+    let mut state = State::new(folder_path, editor, Sorting::Natural);
     state.update_files()?;
+    state.update_sort();
 
     run(state, terminal)?;
 

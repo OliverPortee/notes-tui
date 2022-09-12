@@ -1,5 +1,5 @@
-use std::ffi::OsString;
-use std::io::Result;
+use std::io::{ErrorKind, Result};
+use std::{ffi::OsString, time::SystemTime};
 
 use std::path::PathBuf;
 
@@ -7,20 +7,38 @@ use tui::widgets::ListState;
 
 use crate::{
     keybindings::{make_key_sm, KeyStateMachine},
+    sorting::{sort_files, Sorting},
     util, CrossTerminal,
 };
 
+#[derive(Eq, Clone)]
+pub struct FileInfo {
+    pub path: PathBuf,
+    pub name: OsString,
+    pub is_folder: bool,
+    pub ctime: SystemTime,
+    pub mtime: SystemTime,
+    pub size: u64,
+}
+
+impl PartialEq for FileInfo {
+    fn eq(&self, other: &Self) -> bool {
+        self.path == other.path
+    }
+}
+
 pub struct State {
     pub cwd: PathBuf,
-    files: Vec<PathBuf>,
+    files: Vec<FileInfo>,
     pub list_state: ListState,
     pub file_view_content: String,
     pub key_state_machine: KeyStateMachine,
-    pub editor: OsString,
+    editor: OsString,
+    sorting: Sorting,
 }
 
 impl State {
-    pub fn new(cwd: PathBuf, editor: OsString) -> Self {
+    pub fn new(cwd: PathBuf, editor: OsString, sorting: Sorting) -> Self {
         assert!(cwd.is_dir());
         State {
             cwd,
@@ -29,49 +47,77 @@ impl State {
             file_view_content: String::new(),
             key_state_machine: make_key_sm(),
             editor,
+            sorting,
         }
     }
 
     pub fn update_files(&mut self) -> Result<()> {
         self.files = std::fs::read_dir(&self.cwd)?
-            .filter_map(|dir_entry| Some(dir_entry.ok()?.path()))
+            .filter_map(|dir_entry| Some(dir_entry.ok()?))
+            .map(|dir_entry| -> Result<FileInfo> {
+                let metadata = dir_entry.metadata()?;
+                Ok(FileInfo {
+                    path: dir_entry.path(),
+                    name: dir_entry
+                        .path()
+                        .file_name()
+                        .ok_or(std::io::Error::new(
+                            ErrorKind::NotFound,
+                            "could not read file name",
+                        ))?
+                        .into(),
+                    is_folder: dir_entry.file_type()?.is_dir(),
+                    ctime: metadata.created()?,
+                    mtime: metadata.modified()?,
+                    size: metadata.len(),
+                })
+            })
+            .filter_map(|r| r.ok())
             .collect();
         if self.files.is_empty() {
-            self.update_selection(None)?;
+            self.update_selection(None);
+            self.update_file_view_content()?;
         }
         Ok(())
+    }
+
+    pub fn update_sort(&mut self) {
+        let f = self.selected_file().map(FileInfo::clone);
+        sort_files(&mut self.files, &self.sorting);
+        if let Some(f) = f {
+            let new_selection = self.files.iter().position(|other| *other == f).unwrap();
+            self.update_selection(Some(new_selection));
+        }
     }
 
     pub fn update_file_view_content(&mut self) -> Result<()> {
         match self.selected_file() {
             None => self.file_view_content = String::new(),
-            Some(path) => self.file_view_content = std::fs::read_to_string(path)?,
+            Some(file) => self.file_view_content = std::fs::read_to_string(&file.path)?,
         }
         Ok(())
     }
 
-    pub fn selected_file(&self) -> Option<PathBuf> {
+    pub fn selected_file(&self) -> Option<&FileInfo> {
         self.list_state.selected().map(|index| {
             assert!(index < self.files.len());
-            self.files[index].clone()
+            &self.files[index]
         })
     }
 
     pub fn file_names(&self) -> Vec<&str> {
         self.files
             .iter()
-            .filter_map(|p| p.file_name()?.to_str())
+            .filter_map(|f| f.path.file_name()?.to_str())
             .collect()
     }
 
-    pub fn update_selection(&mut self, index: Option<usize>) -> Result<()> {
+    pub fn update_selection(&mut self, index: Option<usize>) {
         assert!(!self.files.is_empty() || index == None);
         if let Some(i) = index {
             assert!(i < self.files.len());
         }
         self.list_state.select(index);
-        self.update_file_view_content()?;
-        Ok(())
     }
 }
 
@@ -82,7 +128,7 @@ pub fn selection_down(state: &mut State, _: &mut CrossTerminal, count: usize) ->
     let last_index = state.files.len() - 1;
     match state.list_state.selected() {
         None => state.update_selection(Some(0)),
-        Some(i) if i == last_index => Ok(()),
+        Some(i) if i == last_index => {}
         Some(i) => {
             let count = if count == 0 { 1 } else { count };
             let new = i + count;
@@ -90,6 +136,7 @@ pub fn selection_down(state: &mut State, _: &mut CrossTerminal, count: usize) ->
             state.update_selection(Some(new))
         }
     }
+    state.update_file_view_content()
 }
 
 pub fn selection_up(state: &mut State, _: &mut CrossTerminal, count: usize) -> Result<()> {
@@ -98,7 +145,7 @@ pub fn selection_up(state: &mut State, _: &mut CrossTerminal, count: usize) -> R
     }
     match state.list_state.selected() {
         None => state.update_selection(Some(state.files.len() - 1)),
-        Some(0) => Ok(()),
+        Some(0) => {}
         Some(i) => {
             let count = if count == 0 { 1 } else { count };
             if count > i {
@@ -108,6 +155,7 @@ pub fn selection_up(state: &mut State, _: &mut CrossTerminal, count: usize) -> R
             }
         }
     }
+    state.update_file_view_content()
 }
 
 pub fn selection_top(state: &mut State, _: &mut CrossTerminal, count: usize) -> Result<()> {
@@ -117,7 +165,8 @@ pub fn selection_top(state: &mut State, _: &mut CrossTerminal, count: usize) -> 
     let last_index = state.files.len() - 1;
     let new = if count == 0 { 0 } else { count - 1 };
     let new = if new > last_index { last_index } else { new };
-    state.update_selection(Some(new))
+    state.update_selection(Some(new));
+    state.update_file_view_content()
 }
 
 pub fn selection_bottom(state: &mut State, _: &mut CrossTerminal, count: usize) -> Result<()> {
@@ -131,7 +180,8 @@ pub fn selection_bottom(state: &mut State, _: &mut CrossTerminal, count: usize) 
     } else {
         last_index - count
     };
-    state.update_selection(Some(new))
+    state.update_selection(Some(new));
+    state.update_file_view_content()
 }
 
 fn open_relative_date(state: &mut State, terminal: &mut CrossTerminal, offset: i64) -> Result<()> {
@@ -142,6 +192,7 @@ fn open_relative_date(state: &mut State, terminal: &mut CrossTerminal, offset: i
     util::open_editor(&state.editor, vec![path], terminal)?;
     state.update_files()?;
     state.update_file_view_content()?;
+    state.update_sort();
     Ok(())
 }
 
@@ -162,10 +213,41 @@ pub fn open_rel_date_bwd(
 }
 
 pub fn open_selected(state: &mut State, terminal: &mut CrossTerminal, _: usize) -> Result<()> {
-    if let Some(path) = state.selected_file() {
-        util::open_editor(&state.editor, vec![path], terminal)?;
+    if let Some(file) = state.selected_file() {
+        util::open_editor(&state.editor, vec![&file.path], terminal)?;
         state.update_files()?;
         state.update_file_view_content()?;
+        state.update_sort();
     }
+    Ok(())
+}
+
+pub fn sort_by_name(state: &mut State, _: &mut CrossTerminal, _: usize) -> Result<()> {
+    state.sorting = Sorting::Name;
+    state.update_sort();
+    Ok(())
+}
+
+pub fn sort_by_ctime(state: &mut State, _: &mut CrossTerminal, _: usize) -> Result<()> {
+    state.sorting = Sorting::Ctime;
+    state.update_sort();
+    Ok(())
+}
+
+pub fn sort_by_mtime(state: &mut State, _: &mut CrossTerminal, _: usize) -> Result<()> {
+    state.sorting = Sorting::Mtime;
+    state.update_sort();
+    Ok(())
+}
+
+pub fn sort_by_size(state: &mut State, _: &mut CrossTerminal, _: usize) -> Result<()> {
+    state.sorting = Sorting::Size;
+    state.update_sort();
+    Ok(())
+}
+
+pub fn sort_by_natural(state: &mut State, _: &mut CrossTerminal, _: usize) -> Result<()> {
+    state.sorting = Sorting::Natural;
+    state.update_sort();
     Ok(())
 }

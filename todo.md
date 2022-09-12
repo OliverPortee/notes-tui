@@ -10,6 +10,8 @@
 * [✓] remove tilde expansion (done automatically by shell)
 * [✓] immutable state in ui() (only after scrolling)
 * [✓] keybinding actions as non-member functions
+* [ ] delete files
+* [ ] visual mode
 * [ ] footer for commands/debug text
 * [ ] README.md
 * [ ] help text
@@ -20,9 +22,6 @@
 * [ ] select the right file when creating a new one
 * [ ] go to specific year or month or day
 * [ ] scroll in the file view?
-
-# design decisions
-* [ ] more general as a file browser or only as notes/diary
 
 # features
 
@@ -36,22 +35,29 @@
 ## folders
 
 ## search
+* [ ] filename
+* [ ] creation date
+* [ ] content
+* [ ] fuzzy
 
 ## sort
-* [ ] by name
-* [ ] by creation date
-* [ ] by last modified
-* [ ] by size
-* [ ] by natural ("1" < "10")
+* [✓] by name
+* [✓] by creation date
+* [✓] by last modified
+* [✓] by size
+* [✓] by natural ("1" < "10")
+* [ ] reverse sort
 
 ## syntax highlight
 
 # keybindings
 
+e: edit file
 h: exit folder (only when folders implemented)
 <C-u>: half page up
 <C-d>: half page down
 dd: delete
+v: visual mode
 a: rename after filename
 A: rename after extension
 /: search
