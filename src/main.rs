@@ -50,7 +50,7 @@ fn main() -> io::Result<()> {
         .or_else(|| std::env::var_os("EDITOR"))
         .unwrap_or_else(|| fail("could not find $VISUAL or $EDITOR"));
 
-    let mut state = State::new(folder_path, editor, Sorting::Natural, false);
+    let mut state = State::new(folder_path, editor, Sorting::Date, false);
     state.update_files()?;
 
     run(state, terminal)?;
@@ -106,7 +106,8 @@ fn ui<B: Backend>(f: &mut Frame<B>, state: &State) {
             .map(KeyBindingPart::to_string)
             .collect::<Vec<String>>()
             .join(""),
-    ).block(Block::default().borders(Borders::TOP));
+    )
+    .block(Block::default().borders(Borders::TOP));
     f.render_widget(footer, v_chunks[2]);
 
     let h_chunks = Layout::default()
@@ -118,7 +119,7 @@ fn ui<B: Backend>(f: &mut Frame<B>, state: &State) {
         ])
         .split(v_chunks[1]);
     let file_list_block = Block::default();
-    let list_items: Vec<ListItem> = state.file_names().into_iter().map(ListItem::new).collect();
+    let list_items: Vec<ListItem> = state.entry_names().into_iter().map(ListItem::new).collect();
     let list = List::new(list_items)
         .block(file_list_block)
         .highlight_style(

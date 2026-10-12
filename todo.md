@@ -22,6 +22,8 @@
 * [ ] go to specific year or month or day
 * [ ] scroll in the file view?
 * [ ] confirm before deleting a file
+* [ ] edit file with arbitrary name
+* [ ] show diary entries, not files
 
 # features
 
@@ -33,6 +35,8 @@
 * [ ] keybinding cheat sheet
 
 ## folders
+* [ ] show folder content to the right
+* [ ] allow stepping into a folder and back
 
 ## search
 * [ ] filename
@@ -56,10 +60,8 @@ e: edit file
 h: exit folder (only when folders implemented)
 <C-u>: half page up
 <C-d>: half page down
-dd: delete
 v: visual mode
 a: rename after filename
 A: rename after extension
 /: search
-Esc: escape command
 

@@ -68,5 +68,5 @@ where
 
 pub fn format_date(offset: i64) -> String {
     let now = Local::now() + Duration::days(offset);
-    format!("{}", now.format("%Y-%m-%d"))
+    now.format("%Y-%m-%d").to_string()
 }

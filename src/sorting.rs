@@ -1,41 +1,23 @@
 use std::cmp::Ordering;
 
-use crate::state::FileInfo;
+use crate::state::DiaryEntry;
 
 pub enum Sorting {
-    Name,
-    Ctime,
-    Mtime,
+    Date,
     Size,
-    Natural,
 }
 
-pub fn name(file1: &FileInfo, file2: &FileInfo) -> Ordering {
-    file1.name.cmp(&file2.name)
+pub fn date(file1: &DiaryEntry, file2: &DiaryEntry) -> Ordering {
+    file1.date.cmp(&file2.date)
 }
 
-pub fn ctime(file1: &FileInfo, file2: &FileInfo) -> Ordering {
-    file1.ctime.cmp(&file2.ctime)
-}
-
-pub fn mtime(file1: &FileInfo, file2: &FileInfo) -> Ordering {
-    file1.mtime.cmp(&file2.mtime)
-}
-
-pub fn size(file1: &FileInfo, file2: &FileInfo) -> Ordering {
+pub fn size(file1: &DiaryEntry, file2: &DiaryEntry) -> Ordering {
     file1.size.cmp(&file2.size)
 }
 
-pub fn natural(file1: &FileInfo, file2: &FileInfo) -> Ordering {
-    natord::compare(&file1.name.to_string_lossy(), &file2.name.to_string_lossy())
-}
-
-pub fn sort_files(files: &mut Vec<FileInfo>, sorting: &Sorting) {
+pub fn sort_files(files: &mut Vec<DiaryEntry>, sorting: &Sorting) {
     match sorting {
-        Sorting::Name => files.sort_by(name),
-        Sorting::Ctime => files.sort_by(ctime),
-        Sorting::Mtime => files.sort_by(mtime),
+        Sorting::Date => files.sort_by(date),
         Sorting::Size => files.sort_by(size),
-        Sorting::Natural => files.sort_by(natural),
     }
 }

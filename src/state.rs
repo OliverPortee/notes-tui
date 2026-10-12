@@ -1,8 +1,9 @@
-use std::io::{ErrorKind, Result};
-use std::{ffi::OsString, time::SystemTime};
+use std::ffi::OsString;
+use std::io::Result;
 
 use std::path::PathBuf;
 
+use chrono::NaiveDate;
 use tui::widgets::ListState;
 
 use crate::{
@@ -11,17 +12,16 @@ use crate::{
     util, CrossTerminal,
 };
 
+const DATE_FORMAT: &str = "%Y-%m-%d";
+
 #[derive(Eq, Clone)]
-pub struct FileInfo {
+pub struct DiaryEntry {
     pub path: PathBuf,
-    pub name: OsString,
-    pub is_folder: bool,
-    pub ctime: SystemTime,
-    pub mtime: SystemTime,
+    pub date: NaiveDate,
     pub size: u64,
 }
 
-impl PartialEq for FileInfo {
+impl PartialEq for DiaryEntry {
     fn eq(&self, other: &Self) -> bool {
         self.path == other.path
     }
@@ -29,7 +29,7 @@ impl PartialEq for FileInfo {
 
 pub struct State {
     pub cwd: PathBuf,
-    files: Vec<FileInfo>,
+    entries: Vec<DiaryEntry>,
     pub list_state: ListState,
     pub file_view_content: String,
     pub key_state_machine: KeyStateMachine,
@@ -43,7 +43,7 @@ impl State {
         assert!(cwd.is_dir());
         State {
             cwd,
-            files: Vec::new(),
+            entries: Vec::new(),
             list_state: ListState::default(),
             file_view_content: String::new(),
             key_state_machine: KeyStateMachine::new(example::keybindings()),
@@ -54,33 +54,27 @@ impl State {
     }
 
     pub fn update_files(&mut self) -> Result<()> {
-        self.files = std::fs::read_dir(&self.cwd)?
-            .filter_map(|dir_entry| Some(dir_entry.ok()?))
-            .map(|dir_entry| -> Result<FileInfo> {
-                let metadata = dir_entry.metadata()?;
-                Ok(FileInfo {
+        self.entries = std::fs::read_dir(&self.cwd)?
+            .filter_map(|dir_entry| dir_entry.ok())
+            .filter(|dir_entry| match dir_entry.file_type() {
+                Ok(ft) => ft.is_file(),
+                _ => false,
+            })
+            .filter_map(|dir_entry| {
+                let path = dir_entry.path();
+                let file_name = path.file_name()?.to_string_lossy();
+                Some(DiaryEntry {
                     path: dir_entry.path(),
-                    name: dir_entry
-                        .path()
-                        .file_name()
-                        .ok_or(std::io::Error::new(
-                            ErrorKind::NotFound,
-                            "could not read file name",
-                        ))?
-                        .into(),
-                    is_folder: dir_entry.file_type()?.is_dir(),
-                    ctime: metadata.created()?,
-                    mtime: metadata.modified()?,
-                    size: metadata.len(),
+                    date: NaiveDate::parse_from_str(&file_name, DATE_FORMAT).ok()?,
+                    size: dir_entry.metadata().ok()?.len(),
                 })
             })
-            .filter_map(|r| r.ok())
             .collect();
-        if self.files.is_empty() {
+        if self.entries.is_empty() {
             self.update_selection(None);
         } else if let Some(index) = self.list_state.selected() {
-            if index >= self.files.len() {
-                self.update_selection(Some(self.files.len() - 1));
+            if index >= self.entries.len() {
+                self.update_selection(Some(self.entries.len() - 1));
             }
         }
         self.update_sort();
@@ -89,13 +83,13 @@ impl State {
 
     pub fn update_sort(&mut self) {
         let path = self.selected_file().map(|f| f.path.clone());
-        sort_files(&mut self.files, &self.sorting);
+        sort_files(&mut self.entries, &self.sorting);
         if self.reverse_sort {
-            self.files.reverse();
+            self.entries.reverse();
         }
         if let Some(path) = path {
             let new_selection = self
-                .files
+                .entries
                 .iter()
                 .position(|other| other.path == path)
                 .unwrap();
@@ -111,24 +105,24 @@ impl State {
         Ok(())
     }
 
-    pub fn selected_file(&self) -> Option<&FileInfo> {
+    pub fn selected_file(&self) -> Option<&DiaryEntry> {
         self.list_state.selected().map(|index| {
-            assert!(index < self.files.len());
-            &self.files[index]
+            assert!(index < self.entries.len());
+            &self.entries[index]
         })
     }
 
-    pub fn file_names(&self) -> Vec<&str> {
-        self.files
+    pub fn entry_names(&self) -> Vec<String> {
+        self.entries
             .iter()
-            .filter_map(|f| f.path.file_name()?.to_str())
+            .map(|e| e.date.format(DATE_FORMAT).to_string())
             .collect()
     }
 
     pub fn update_selection(&mut self, index: Option<usize>) {
-        assert!(!self.files.is_empty() || index == None);
+        assert!(!self.entries.is_empty() || index == None);
         if let Some(i) = index {
-            assert!(i < self.files.len());
+            assert!(i < self.entries.len());
         }
         self.list_state.select(index);
     }
@@ -139,10 +133,10 @@ pub mod updates {
     use super::*;
 
     pub fn selection_down(state: &mut State, _: &mut CrossTerminal, count: usize) -> Result<()> {
-        if state.files.is_empty() {
+        if state.entries.is_empty() {
             return Ok(());
         }
-        let last_index = state.files.len() - 1;
+        let last_index = state.entries.len() - 1;
         match state.list_state.selected() {
             None => state.update_selection(Some(0)),
             Some(i) if i == last_index => {}
@@ -157,11 +151,11 @@ pub mod updates {
     }
 
     pub fn selection_up(state: &mut State, _: &mut CrossTerminal, count: usize) -> Result<()> {
-        if state.files.is_empty() {
+        if state.entries.is_empty() {
             return Ok(());
         }
         match state.list_state.selected() {
-            None => state.update_selection(Some(state.files.len() - 1)),
+            None => state.update_selection(Some(state.entries.len() - 1)),
             Some(0) => {}
             Some(i) => {
                 let count = if count == 0 { 1 } else { count };
@@ -176,10 +170,10 @@ pub mod updates {
     }
 
     pub fn selection_top(state: &mut State, _: &mut CrossTerminal, count: usize) -> Result<()> {
-        if state.files.is_empty() {
+        if state.entries.is_empty() {
             return Ok(());
         }
-        let last_index = state.files.len() - 1;
+        let last_index = state.entries.len() - 1;
         let new = if count == 0 { 0 } else { count - 1 };
         let new = if new > last_index { last_index } else { new };
         state.update_selection(Some(new));
@@ -187,10 +181,10 @@ pub mod updates {
     }
 
     pub fn selection_bottom(state: &mut State, _: &mut CrossTerminal, count: usize) -> Result<()> {
-        if state.files.is_empty() {
+        if state.entries.is_empty() {
             return Ok(());
         }
-        let last_index = state.files.len() - 1;
+        let last_index = state.entries.len() - 1;
         let count = if count == 0 { 0 } else { count - 1 };
         let new = if count > last_index {
             0
@@ -212,7 +206,7 @@ pub mod updates {
         path.set_extension("md");
         util::open_editor(&state.editor, vec![&path], terminal, &state.cwd)?;
         state.update_files()?;
-        let index = state.files.iter().position(|f| f.path == path);
+        let index = state.entries.iter().position(|f| f.path == path);
         if let Some(index) = index {
             state.update_selection(Some(index));
         }
@@ -241,7 +235,7 @@ pub mod updates {
             let path = file.path.clone();
             util::open_editor(&state.editor, vec![&file.path], terminal, &state.cwd)?;
             state.update_files()?;
-            let index = state.files.iter().position(|f| f.path == path);
+            let index = state.entries.iter().position(|f| f.path == path);
             if let Some(index) = index {
                 state.update_selection(Some(index));
             }
@@ -250,20 +244,8 @@ pub mod updates {
         Ok(())
     }
 
-    pub fn sort_by_name(state: &mut State, _: &mut CrossTerminal, _: usize) -> Result<()> {
-        state.sorting = Sorting::Name;
-        state.update_sort();
-        Ok(())
-    }
-
-    pub fn sort_by_ctime(state: &mut State, _: &mut CrossTerminal, _: usize) -> Result<()> {
-        state.sorting = Sorting::Ctime;
-        state.update_sort();
-        Ok(())
-    }
-
-    pub fn sort_by_mtime(state: &mut State, _: &mut CrossTerminal, _: usize) -> Result<()> {
-        state.sorting = Sorting::Mtime;
+    pub fn sort_by_date(state: &mut State, _: &mut CrossTerminal, _: usize) -> Result<()> {
+        state.sorting = Sorting::Date;
         state.update_sort();
         Ok(())
     }
@@ -274,18 +256,12 @@ pub mod updates {
         Ok(())
     }
 
-    pub fn sort_by_natural(state: &mut State, _: &mut CrossTerminal, _: usize) -> Result<()> {
-        state.sorting = Sorting::Natural;
-        state.update_sort();
-        Ok(())
-    }
-
     pub fn reverse_sort(state: &mut State, _: &mut CrossTerminal, _: usize) -> Result<()> {
-        let f = state.selected_file().map(FileInfo::clone);
+        let f = state.selected_file().map(DiaryEntry::clone);
         state.reverse_sort = !state.reverse_sort;
-        state.files.reverse();
+        state.entries.reverse();
         if let Some(f) = f {
-            let new_selection = state.files.iter().position(|other| *other == f).unwrap();
+            let new_selection = state.entries.iter().position(|other| *other == f).unwrap();
             state.update_selection(Some(new_selection));
         }
         Ok(())
@@ -295,15 +271,15 @@ pub mod updates {
         let count = if count == 0 { 1 } else { count };
         for _ in 0..count {
             if let Some(index) = state.list_state.selected() {
-                let file = &state.files[index];
+                let file = &state.entries[index];
                 std::fs::remove_file(&file.path)?;
-                state.files.remove(index);
-                if state.files.is_empty() {
+                state.entries.remove(index);
+                if state.entries.is_empty() {
                     state.update_selection(None);
                     break;
                 }
-                if index >= state.files.len() {
-                    state.update_selection(Some(state.files.len() - 1));
+                if index >= state.entries.len() {
+                    state.update_selection(Some(state.entries.len() - 1));
                 }
             }
         }
